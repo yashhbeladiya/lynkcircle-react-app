@@ -109,7 +109,7 @@ const Navbar = () => {
                 <span className="text-xs hidden md:block">My Community</span>
               </Link>
               <Link
-                to="/work"
+                to="/works"
                 className="text-neutral flex flex-col items-center relative"
               >
                 <IconButton>

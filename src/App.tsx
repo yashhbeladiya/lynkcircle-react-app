@@ -15,6 +15,8 @@ import Home from "./pages/Home";
 import NotificationsPage from "./pages/NotificationsPage";
 import PostPage from "./pages/PostPage";
 import Network from "./pages/Network";
+import Works from "./pages/Works";
+import WorkPage from "./pages/WorkPage";
 
 const theme = createTheme({
   palette: {
@@ -67,20 +69,28 @@ function App() {
               element={!authUser ? <SignIn /> : <Navigate to={"/"} />}
             />
             <Route path="/complete-profile" element={<CompleteProfile />} />
-            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/profile/:username" element={<UserProfile />} />
             <Route
               path="/notifications"
               element={
-                authUser ? <NotificationsPage /> : <Navigate to={"/login"} />
+                authUser ? <NotificationsPage /> : <Navigate to={"/signin"} />
               }
             />
             <Route
               path="/feed/:postId"
-              element={authUser ? <PostPage /> : <Navigate to={"/login"} />}
+              element={authUser ? <PostPage /> : <Navigate to={"/signin"} />}
             />
             <Route
               path="/network"
-              element={authUser ? <Network /> : <Navigate to={"/login"} />}
+              element={authUser ? <Network /> : <Navigate to={"/signin"} />}
+            />
+            <Route
+              path="/works"
+              element={authUser ? <Works /> : <Navigate to={"/signin"} />}
+            />
+            <Route
+              path="/works/:workPostId"
+              element={authUser ? <WorkPage /> : <Navigate to={"/signin"} />}
             />
           </Routes>
           <Toaster />

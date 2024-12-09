@@ -1,17 +1,56 @@
-import React from 'react'
+import React from "react";
+import { TextField, Typography, IconButton } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { FaPencil } from "react-icons/fa6";
 
 const AboutSection = ({
-    userData,
-    isOwnProfile,
-    onSave,
-  }: {
-    userData: any;
-    isOwnProfile: boolean;
-    onSave: (e: any) => void;
-  }) => {
-  return (
-    <div>AboutSection</div>
-  )
-}
+  userData,
+  isOwnProfile,
+  onSave,
+}: {
+  userData: any;
+  isOwnProfile: boolean;
+  onSave: (e: any) => void;
+}) => {
+  const [bio, setBio] = React.useState(userData.bio || "");
+  const [isEditing, setIsEditing] = React.useState(false);
 
-export default AboutSection
+  const handleSave = () => {
+    onSave({ bio });
+  };
+  return (
+    <div
+      className="bg-white shadow-lg rounded-lg overflow-hidden p-5 mt-2"
+      style={{ position: "relative" }}
+    >
+      <Typography variant="h6" gutterBottom>
+        About
+      </Typography>
+      {isOwnProfile && (
+        // <FaPencil color='secondary' />
+        <IconButton
+          sx={{ position: "absolute", top: 8, right: 8 }}
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          <EditIcon color="secondary" />
+        </IconButton>
+      )}
+      {isEditing ? (
+        <TextField
+          margin="dense"
+          fullWidth
+          multiline
+          variant="outlined"
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={4}
+          style={{ width: "100%", padding: 8 }}
+        />
+      ) : (
+        <Typography variant="body1">{bio || "No bio available."}</Typography>
+      )}
+    </div>
+  );
+};
+
+export default AboutSection;

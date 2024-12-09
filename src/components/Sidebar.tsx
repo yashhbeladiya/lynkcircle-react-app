@@ -43,7 +43,7 @@ const Sidebar = ({ user }) => {
           sx={{
             height: '64px',
             borderRadius: '8px 8px 0 0',
-            backgroundImage: `url("${user.bannerImg || "/banner.png"}")`,
+            backgroundImage: `url("${user.bannerImage || "/banner.png"}")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}

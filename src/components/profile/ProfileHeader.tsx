@@ -1,325 +1,335 @@
+//@ts-nocheck
 import React, { useState } from "react";
 import { AxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient, QueryKey } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
 import { toast } from "react-hot-toast";
-import { Avatar, Badge, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField } from "@mui/material";
-import { Edit, PhotoCamera } from "@mui/icons-material";
-import { Camera, Clock, MapPin, UserCheck, UserPlus, X } from "lucide-react";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from "@mui/material";
+import {
+  UserCheck,
+  UserPlus,
+  UserMinus,
+  MapPin,
+  Edit,
+  Camera,
+} from "lucide-react";
+import { set } from "date-fns";
+import { T } from "react-router/dist/production/fog-of-war-CbNQuoo8";
 
+// Types
 type AuthUser = {
   _id: string;
-  // Add other fields if needed
+  role: string;
 };
-
-type EditedData = {
-  bannerImg?: string;
-  profilePicture?: string;
-  firstName?: string;
-  lastName?: string;
-  headline?: string;
-  location?: string;
-  bio?: string;
-};
-
-interface ConnectionStatus {
-  data: {
-    requestId: string;
-    status: "connected" | "pending" | "received";
-    // Add other fields as needed
-  };
-}
-interface ErrorResponse {
-  message: string;
-}
 
 const ProfileHeader = ({
   userData,
   isOwnProfile,
   onSave,
 }: {
-  userData: any;
+  userData: UserData;
   isOwnProfile: boolean;
-  onSave: (e: any) => void;
+  onSave: (editedData: EditedData) => void;
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<EditedData>({});
-  const [openDialog, setOpenDialog] = useState(false);
+  const [firstName, setFirstName] = useState(userData.firstName);
+  const [lastName, setLastName] = useState(userData.lastName);
+  const [headline, setHeadline] = useState(userData.headline);
+  const [location, setLocation] = useState(userData.location);
+  const [bio, setBio] = useState(userData.bio);
+  const [profilePicture, setProfilePicture] = useState(userData.profilePicture);
+  const [bannerImage, setbannerImage] = useState(userData.bannerImage);
+  const [status, setStatus] = useState(userData.status);
+
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+
   const queryClient = useQueryClient();
 
-  const { data: authUser } = useQuery<AuthUser>({ queryKey: ["authUser"] });
-
-  const { data: connectionStatus, refetch: refetchConnectionStatus } = useQuery<ConnectionStatus>({
-    queryKey: ["connectionStatus", userData._id],
-    // queryFn: () => axiosInstance.get(`/connections/status/${userData._id}`),
-    enabled: !isOwnProfile,
+  // Get authenticated user
+  const { data: authUser } = useQuery<AuthUser>({
+    queryKey: ["authUser"],
   });
 
-  const isConnected = userData.connections.some((connection: any) => connection === authUser?._id);
+  // Check connection status
+  const isConnected = userData.connections.includes(authUser?._id || "");
+  const isFollowing =
+    authUser?.role === "Client"
+      ? userData.savedWorkers.includes(authUser?._id || "")
+      : userData.followingClients.includes(authUser?._id || "");
 
-  const { mutate: sendConnectionRequest } = useMutation({
-    mutationFn: (userId) => axiosInstance.post(`/connections/request/${userId}`),
+  // Mutation hooks
+  const { mutate: toggleConnection } = useMutation({
+    mutationFn: () =>
+      authUser?.role === "Client"
+        ? axiosInstance.post(`/workers/save/${userData._id}`)
+        : axiosInstance.post(`/connections/request/${userData._id}`),
     onSuccess: () => {
-      toast.success("Connection request sent");
-      refetchConnectionStatus();
-      // queryClient.invalidateQueries(["connectionRequests"]);
+      toast.success(
+        authUser?.role === "Client" ? "Worker saved" : "Connection request sent"
+      );
+      queryClient.invalidateQueries({ queryKey: ["userData", userData._id] });
     },
     onError: (error: unknown) => {
-      const axiosError = error as AxiosError<ErrorResponse>;
-      toast.error(axiosError.response?.data?.message || "An error occurred");
-    },
-  });
-
-  const { mutate: acceptRequest } = useMutation({
-    mutationFn: (requestId) => axiosInstance.put(`/connections/accept/${requestId}`),
-    onSuccess: () => {
-      toast.success("Connection request accepted");
-      refetchConnectionStatus();
-      // queryClient.invalidateQueries(["connectionRequests"]);
-    },
-    onError: (error) => {
-      const axiosError = error as AxiosError<ErrorResponse>;
-      toast.error(axiosError.response?.data?.message || "An error occurred");
-    },
-  });
-
-  const { mutate: rejectRequest } = useMutation({
-    mutationFn: (requestId) => axiosInstance.put(`/connections/reject/${requestId}`),
-    onSuccess: () => {
-      toast.success("Connection request rejected");
-      refetchConnectionStatus();
-      // queryClient.invalidateQueries(["connectionRequests"] as QueryKey);
-    },
-    onError: (error) => {
-      const axiosError = error as AxiosError<ErrorResponse>;
+      const axiosError = error as AxiosError;
       toast.error(axiosError.response?.data?.message || "An error occurred");
     },
   });
 
   const { mutate: removeConnection } = useMutation({
-    mutationFn: (userId) => axiosInstance.delete(`/connections/${userId}`),
+    mutationFn: () =>
+      authUser?.role === "Client"
+        ? axiosInstance.delete(`/workers/unsave/${userData._id}`)
+        : axiosInstance.delete(`/connections/${userData._id}`),
     onSuccess: () => {
-      toast.success("Connection removed");
-      refetchConnectionStatus();
-      // queryClient.invalidateQueries(["connectionRequests"]);
+      toast.success(
+        authUser?.role === "Client" ? "Worker removed" : "Connection removed"
+      );
+      queryClient.invalidateQueries({ queryKey: ["userData", userData._id] });
     },
-    onError: (error) => {
-      const axiosError = error as AxiosError<ErrorResponse>;
+    onError: (error: unknown) => {
+      const axiosError = error as AxiosError;
       toast.error(axiosError.response?.data?.message || "An error occurred");
     },
   });
 
-  const getConnectionStatus = () => {
-    if (isConnected) return "connected";
-    if (!isConnected) return "not_connected";
-    return connectionStatus?.data?.status;
-  };
-
-  const renderConnectionButton = () => {
-    const baseClass = "text-white py-2 px-4 rounded-full transition duration-300 flex items-center justify-center";
-    switch (getConnectionStatus()) {
-      case "connected":
-        return (
-          <div className='flex gap-2 justify-center'>
-            <div className={`${baseClass} bg-green-500 hover:bg-green-600`}>
-              <UserCheck size={20} className='mr-2' />
-              Connected
-            </div>
-            <button
-              className={`${baseClass} bg-red-500 hover:bg-red-600 text-sm`}
-              onClick={() => removeConnection(userData._id)}
-            >
-              <X size={20} className='mr-2' />
-              Remove Connection
-            </button>
-          </div>
-        );
-
-      case "pending":
-        return (
-          <button className={`${baseClass} bg-yellow-500 hover:bg-yellow-600`}>
-            <Clock size={20} className='mr-2' />
-            Pending
-          </button>
-        );
-
-      case "received":
-        return (
-          <div className='flex gap-2 justify-center'>
-            <button
-              // onClick={() => acceptRequest(connectionStatus?.data.requestId)}
-              className={`${baseClass} bg-green-500 hover:bg-green-600`}
-            >
-              Accept
-            </button>
-            <button
-              // onClick={() => rejectRequest(connectionStatus?.data.requestId)}
-              className={`${baseClass} bg-red-500 hover:bg-red-600`}
-            >
-              Reject
-            </button>
-          </div>
-        );
-      default:
-        return (
-          <button
-            onClick={() => sendConnectionRequest(userData._id)}
-            className='bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-full transition duration-300 flex items-center justify-center'
-          >
-            <UserPlus size={20} className='mr-2' />
-            Connect
-          </button>
-        );
+  // handle profile picture change
+  const handleProfilePictureChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    try {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setProfilePicture(result);
+          const editedData: EditedData = {
+            profilePicture: result,
+          };
+          onSave(editedData);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error: any) {
+      console.error("Error uploading image: ", error);
+      toast.error("Error uploading image");
     }
   };
 
-  const handleImageChange = (event: any) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditedData((prev) => ({ ...prev, [event.target.name]: reader.result }));
-      };
-      reader.readAsDataURL(file);
+  // handle banner image change
+  const handleBannerImageChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    try {
+      const file = event.target.files[0];
+      if (file) {
+        console.log("file :", file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setbannerImage(result);
+          const editedData: EditedData = {
+            bannerImage: result,
+          };
+          onSave(editedData);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error: any) {
+      console.error("Error uploading image: ", error);
+      toast.error("Error uploading image");
     }
   };
 
+  // Save profile changes
   const handleSave = () => {
+    const editedData: EditedData = {
+      firstName,
+      lastName,
+      headline,
+      location,
+    };
     onSave(editedData);
-    setIsEditing(false);
-    setOpenDialog(false);
-  };
-
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+    setOpenEditDialog(false);
   };
 
   return (
-    <div className='bg-white shadow rounded-lg mb-6'>
+    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+      {/* Banner Image */}
       <div
-        className='relative h-48 rounded-t-lg bg-cover bg-center'
+        className="h-48 bg-cover bg-center relative"
         style={{
-          backgroundImage: `url('${editedData.bannerImg || userData.bannerImg || "/banner.png"}')`,
+          backgroundImage: `url('${bannerImage || "/banner.png"}')`,
         }}
       >
-        {isEditing && (
-          <label className='absolute top-2 right-2 bg-white p-2 rounded-full shadow cursor-pointer'>
+        {isOwnProfile && (
+          <label className="absolute top-2 right-2 bg-white/70 p-2 rounded-full cursor-pointer">
             <Camera size={20} />
             <input
-              type='file'
-              className='hidden'
-              name='bannerImg'
-              onChange={handleImageChange}
-              accept='image/*'
+              type="file"
+              className="hidden"
+              name="bannerImage"
+              onChange={handleBannerImageChange}
+              accept="image/*"
             />
           </label>
         )}
       </div>
 
-      <div className='p-4'>
-        <div className='relative -mt-20 mb-4'>
-          <Badge
-            overlap="circular"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            badgeContent={
-              <span className={`h-3 w-3 rounded-full ${userData.isActive ? 'bg-green-500' : 'bg-gray-500'}`} />
-            }
-          >
-            <Avatar
-              alt={userData.name}
-              src={editedData.profilePicture || userData.profilePicture || "/avatar.png"}
-              sx={{ width: 128, height: 128, border: `4px solid ${userData.isWorker ? 'blue' : 'orange'}` }}
-            />
-          </Badge>
+      {/* Profile Section */}
+      <div className="p-4 relative">
+        {/* Profile Picture */}
+        <div className="-mt-20 mb-4 flex justify-center">
+          <Avatar
+            alt={`${userData.firstName} ${userData.lastName}`}
+            src={profilePicture || userData.profilePicture || "/avatar.png"}
+            sx={{
+              width: 128,
+              height: 128,
+              border: `4px solid ${
+                userData.role === "Worker" ? "blue" : "orange"
+              }`,
+            }}
+          />
 
-          {isEditing && (
-            <label className='absolute bottom-0 right-1/2 transform translate-x-16 bg-white p-2 rounded-full shadow cursor-pointer'>
+          {isOwnProfile && (
+            <label className="absolute top-6 left-15 bg-white/80 p-2 rounded-full cursor-pointer shadow-md">
               <Camera size={20} />
               <input
-                type='file'
-                className='hidden'
-                name='profilePicture'
-                onChange={handleImageChange}
-                accept='image/*'
+                type="file"
+                className="hidden"
+                name="profilePicture"
+                onChange={handleProfilePictureChange}
+                accept="image/*"
               />
             </label>
           )}
         </div>
 
-        <div className='text-center mb-4'>
-          <h1 className='text-2xl font-bold mb-2'>{userData.name}</h1>
-          <p className='text-gray-600'>{userData.headline}</p>
-          <div className='flex justify-center items-center mt-2'>
-            <MapPin size={16} className='text-gray-500 mr-1' />
-            <span className='text-gray-600'>{userData.location}</span>
-          </div>
-        </div>
+        {/* User Details */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">
+            {firstName} {lastName}
+          </h1>
+          <p className="text-gray-600 mb-2">{headline}</p>
 
-        {isOwnProfile ? (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleOpenDialog}
-            className='w-full'
-          >
-            Edit Profile
-          </Button>
-        ) : (
-          <div className='flex justify-center'>{renderConnectionButton()}</div>
-        )}
+          {location && (
+            <div className="flex justify-center items-center mb-2">
+              <MapPin size={16} className="text-gray-500 mr-1" />
+              <span className="text-gray-500">{location}</span>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div className="flex justify-center space-x-4 mb-4">
+            <div className="text-center">
+              <span className="font-bold block">
+                {userData.connections.length}
+              </span>
+              <span className="text-gray-500">Connections</span>
+            </div>
+            {userData.role === "Worker" && (
+              <div className="text-center">
+                <span className="font-bold block">
+                  {userData.savedWorkers.length}
+                </span>
+                <span className="text-gray-500">Saved By</span>
+              </div>
+            )}
+            {userData.role === "Client" && (
+              <div className="text-center">
+                <span className="font-bold block">
+                  {userData.followingClients.length}
+                </span>
+                <span className="text-gray-500">Follower</span>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          {isOwnProfile ? (
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<Edit />}
+              onClick={() => setOpenEditDialog(true)}
+              className="w-full"
+            >
+              Edit Profile
+            </Button>
+          ) : (
+            <div className="flex justify-center space-x-2">
+              <Button
+                variant="contained"
+                color={isConnected ? "error" : "primary"}
+                startIcon={isConnected ? <UserMinus /> : <UserPlus />}
+                onClick={isConnected ? removeConnection : toggleConnection}
+              >
+                {isConnected ? "Disconnect" : "Connect"}
+              </Button>
+              {authUser?.role === "Client" && (
+                <Button
+                  variant="outlined"
+                  color={isFollowing ? "error" : "secondary"}
+                  startIcon={isFollowing ? <UserMinus /> : <UserPlus />}
+                  onClick={isFollowing ? removeConnection : toggleConnection}
+                >
+                  {isFollowing ? "Unsave" : "Save"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      {/* Edit Profile Dialog */}
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
         <DialogTitle>Edit Profile</DialogTitle>
         <DialogContent>
           <TextField
             margin="dense"
             label="First Name"
-            type="text"
             fullWidth
-            value={editedData.firstName ?? userData.firstName}
-            onChange={(e) => setEditedData({ ...editedData, firstName: e.target.value })}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
           />
           <TextField
             margin="dense"
             label="Last Name"
-            type="text"
             fullWidth
-            value={editedData.lastName ?? userData.lastName}
-            onChange={(e) => setEditedData({ ...editedData, lastName: e.target.value })}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
           />
           <TextField
             margin="dense"
             label="Headline"
-            type="text"
             fullWidth
-            value={editedData.headline ?? userData.headline}
-            onChange={(e) => setEditedData({ ...editedData, headline: e.target.value })}
+            value={headline}
+            onChange={(e) => setHeadline(e.target.value)}
           />
           <TextField
             margin="dense"
             label="Location"
-            type="text"
             fullWidth
-            value={editedData.location ?? userData.location}
-            onChange={(e) => setEditedData({ ...editedData, location: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Bio"
-            type="text"
-            fullWidth
-            value={editedData.bio ?? userData.bio}
-            onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={() => setOpenEditDialog(false)} color="error">
+            Cancel
+          </Button>
+          <Button onClick={handleSave} color="secondary">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </div>
