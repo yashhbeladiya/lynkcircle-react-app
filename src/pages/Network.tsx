@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../lib/axios";
 import Sidebar from "../components/Sidebar";
-import { UserPlus } from "lucide-react";
 import ConnectionRequest from "../components/ConnectionRequest";
 import UserCard from "../components/UserCard";
 import {
@@ -9,12 +8,12 @@ import {
   Container,
   Typography,
   Card,
-  Grid,
   CardContent,
   CardHeader,
   Avatar,
   IconButton,
 } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
 const Network = () => {
@@ -30,6 +29,8 @@ const Network = () => {
     queryKey: ["connections"],
     queryFn: async () => await axiosInstance.get("/connections"),
   });
+
+  console.log("connections", connections?.data);
 
   return (
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -53,7 +54,7 @@ const Network = () => {
                   ))}
                 </Box>
               ) : (
-                <Card variant="outlined" sx={{ textAlign: "center", p: 4 }}>
+                <Card variant="outlined" sx={{ textAlign: "center", p: 4, border: '1px solid #333366', }}>
                   <Avatar sx={{ bgcolor: "secondary.main", mx: "auto", mb: 2 }}>
                     <PersonAddIcon />
                   </Avatar>
@@ -75,7 +76,7 @@ const Network = () => {
                   </Typography>
                   <Grid container spacing={2}>
                     {connections?.data.map((connection: any) => (
-                      <Grid item xs={12} md={6} lg={4} key={connection._id}>
+                      <Grid size={{xs:12, md:6, lg:4}} key={connection._id}>
                         <UserCard user={connection} isConnection={true} />
                       </Grid>
                     ))}

@@ -1,20 +1,77 @@
+//@ts-nocheck
 import React from "react";
 import { Link } from "react-router-dom";
-import { AppBar, Toolbar, Button, Badge, IconButton } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Button,
+  Badge,
+  IconButton,
+  alpha,
+  styled,
+  InputBase,
+  List,
+  ListItem,
+  Drawer,
+  ListItemText,
+  Divider,
+} from "@mui/material";
 import { Menu } from "@mui/icons-material";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { axiosInstance } from "../lib/axios";
-import { FaHome, FaUsers, FaBell, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaUsers, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
 import { RiUserCommunityFill } from "react-icons/ri";
 import { FaToolbox } from "react-icons/fa";
-import { MdForum } from "react-icons/md";
+import SearchIcon from "@mui/icons-material/Search";
+import { FaNewspaper } from "react-icons/fa6";
+import { useState } from "react";
+import { grey } from "@mui/material/colors";
 
 interface AuthUser {
   username: string;
   // Add other properties as needed
 }
 
+const Search = styled("div")(({ theme }) => ({
+  position: "relative",
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: grey[100],
+  marginRight: theme.spacing(2),
+  marginLeft: 0,
+  width: "100%",
+  [theme.breakpoints.up("sm")]: {
+    marginLeft: theme.spacing(3),
+    width: "auto",
+  },
+}));
+
+const SearchIconWrapper = styled("div")(({ theme }) => ({
+  padding: theme.spacing(0, 2),
+  height: "100%",
+  position: "absolute",
+  pointerEvents: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+}));
+
+const StyledInputBase = styled(InputBase)(({ theme }) => ({
+  color: "inherit",
+  "& .MuiInputBase-input": {
+    padding: theme.spacing(1, 1, 1, 0),
+    // vertical padding + font size from searchIcon
+    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    transition: theme.transitions.create("width"),
+    width: "100%",
+    [theme.breakpoints.up("md")]: {
+      width: "20ch",
+    },
+  },
+}));
+
 const Navbar = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const { data: authUser } = useQuery<AuthUser>({
     queryKey: ["authUser"],
   });
@@ -45,11 +102,65 @@ const Navbar = () => {
   ).length;
   const unreadConnectionRequestsCount = connectionRequests?.data?.length;
 
-  const iconColor = '#333366';
+  const iconColor = "#333366";
 
-  const handleLogout = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const handleLogout = (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
     logout();
   };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const mobileMenu = (
+    <Drawer anchor="left" open={mobileOpen} onClose={handleDrawerToggle}>
+      <List>
+        <ListItem button component={Link} to="/">
+          <FaHome style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="Home" />
+        </ListItem>
+        <ListItem button component={Link} to="/network">
+          <FaUsers style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="My Network" />
+        </ListItem>
+        <ListItem button component={Link} to="/community">
+          <RiUserCommunityFill style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="My Community" />
+        </ListItem>
+        <ListItem button component={Link} to="/works">
+          <FaToolbox style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="Work" />
+        </ListItem>
+        <ListItem button component={Link} to="/news">
+          <FaNewspaper style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="News" />
+        </ListItem>
+        <ListItem button component={Link} to="/notifications">
+          <Badge badgeContent={unreadNotificationsCount} color="primary">
+            <FaBell style={{ color: iconColor, marginRight: 8 }} />
+          </Badge>
+          <ListItemText primary="Notifications" />
+        </ListItem>
+        {authUser && (
+          <ListItem
+            button
+            component={Link}
+            to={`/profile/${authUser.username}`}
+          >
+            <FaUser style={{ color: iconColor, marginRight: 8 }} />
+            <ListItemText primary="Me" />
+          </ListItem>
+        )}
+        <Divider />
+        <ListItem button onClick={handleLogout}>
+          <FaSignOutAlt style={{ color: iconColor, marginRight: 8 }} />
+          <ListItemText primary="Logout" />
+        </ListItem>
+      </List>
+    </Drawer>
+  );
 
   return (
     <AppBar
@@ -65,10 +176,19 @@ const Navbar = () => {
         <Link to="/" className="flex items-center">
           <img
             className="h-8 w-auto"
-            src="/logolc2.png"
+            src="/logolc1.png"
             alt="LynkCircles Logo"
           />
         </Link>
+        <Search>
+          <SearchIconWrapper>
+            <SearchIcon />
+          </SearchIconWrapper>
+          <StyledInputBase
+            placeholder="Search…"
+            inputProps={{ "aria-label": "search" }}
+          />
+        </Search>
 
         {/* Navbar Links (visible on larger screens) */}
         <div className="hidden sm:flex space-x-4">
@@ -99,12 +219,7 @@ const Navbar = () => {
                 className="text-neutral flex flex-col items-center relative"
               >
                 <IconButton>
-                  <Badge
-                    badgeContent={unreadConnectionRequestsCount}
-                    color="primary"
-                  >
-                    <RiUserCommunityFill style={{color: iconColor}}/>
-                  </Badge>
+                  <RiUserCommunityFill style={{ color: iconColor }} />
                 </IconButton>
                 <span className="text-xs hidden md:block">My Community</span>
               </Link>
@@ -113,14 +228,18 @@ const Navbar = () => {
                 className="text-neutral flex flex-col items-center relative"
               >
                 <IconButton>
-                  <Badge
-                    badgeContent={unreadConnectionRequestsCount}
-                    color="primary"
-                  >
-                    <FaToolbox style={{color: iconColor}}/>
-                  </Badge>
+                  <FaToolbox style={{ color: iconColor }} />
                 </IconButton>
                 <span className="text-xs hidden md:block">Work</span>
+              </Link>
+              <Link
+                to="/news"
+                className="text-neutral flex flex-col items-center relative"
+              >
+                <IconButton>
+                  <FaNewspaper style={{ color: iconColor }} />
+                </IconButton>
+                <span className="text-xs hidden md:block">News</span>
               </Link>
               <Link
                 to="/notifications"
@@ -209,7 +328,8 @@ const Navbar = () => {
         {/* Mobile Menu Button (only visible on smaller screens) */}
         <div className="sm:hidden">
           <IconButton edge="end" color="inherit" aria-label="menu">
-            <Menu />
+            <Menu onClick={handleDrawerToggle} />
+            {mobileMenu}
           </IconButton>
         </div>
       </Toolbar>

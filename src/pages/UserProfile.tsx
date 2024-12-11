@@ -52,16 +52,60 @@ const ProfilePage: React.FC = () => {
     },
   });
 
-   // update work details
-   const { mutate: updateWorkDetails } = useMutation({
-    mutationFn: async (updatedData: any) => {
-      await axiosInstance.put("/workdetails/update", updatedData);
+  const { mutate: deleteService } = useMutation({
+    mutationFn: async (serviceId: string) => {
+      await axiosInstance.delete(`/workdetails/delete/${serviceId}`);
     },
     onSuccess: () => {
-      toast.success("Work details updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["workDetails", username] });
+      toast.success("Service deleted successfully");
+      queryClient.invalidateQueries(["workDetails", username]);
     },
   });
+
+  const handleDeleteService = (serviceId: string) => {
+    deleteService(serviceId);
+  };
+
+   // update work details
+   const { mutate: updateService } = useMutation({
+    mutationFn: async (serviceData) => {
+      // Send service data to backend
+      await axiosInstance.put("/workdetails/update", serviceData);
+    },
+    onSuccess: () => {
+      toast.success("Service updated successfully");
+      queryClient.invalidateQueries(["workDetails", username]);
+
+      handleClose();
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    },
+  });
+
+  const { mutate: createService } = useMutation({
+    mutationFn: async (serviceData) => {
+      // Send service data to backend
+      await axiosInstance.post("/workdetails", serviceData);
+    },
+    onSuccess: () => {
+      toast.success("Service created successfully");
+      queryClient.invalidateQueries(["workDetails", username]);
+
+      handleClose();
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    },
+  });
+
+  const onSaveWorkDetails = (workDetails) => {
+    if (workDetails.id) {
+      updateService(workDetails);
+    } else {
+      createService(workDetails);
+    }
+  }
 
   if (isAuthUserLoading || isUserProfileLoading) return null;
 
@@ -76,7 +120,7 @@ const ProfilePage: React.FC = () => {
     <div className="max-w-4xl mx-auto p-4">
       <ProfileHeader userData={userData} isOwnProfile={isOwnProfile} onSave={handleSave} />
       <AboutSection userData={userData} isOwnProfile={isOwnProfile} onSave={handleSave} />
-      <WorkDetails workDetails={workDetails} isOwnProfile={isOwnProfile} onSave={updateWorkDetails} />
+      <WorkDetails workDetails={workDetails} isOwnProfile={isOwnProfile} onSave={onSaveWorkDetails} onDelete={handleDeleteService} />
     </div>
   );
 };

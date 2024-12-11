@@ -28,7 +28,7 @@ const ConnectionRequest = ({request}: {request:any}) => {
     });
 
   return (
-    <div className='bg-white rounded-lg shadow p-4 flex items-center justify-between transition-all hover:shadow-md'>
+    <div className='bg-white rounded-lg shadow p-4 flex items-center justify-between transition-all hover:shadow-md mb-2' style={{border: '1px solid #333366'}}>
 			<div className='flex items-center gap-4'>
 				<Link to={`/profile/${request.sender.username}`}>
 					<img
@@ -40,14 +40,15 @@ const ConnectionRequest = ({request}: {request:any}) => {
 
 				<div>
 					<Link to={`/profile/${request.sender.username}`} className='font-semibold text-lg'>
-						{request.sender.firstName}{request.sender.lastName}
+						{request.sender.firstName} {request.sender.lastName}
 					</Link>
 					<p className='text-gray-600'>{request.sender.headline}</p>
 				</div>
 			</div> 
             <div className='space-x-2'>
 				<button
-					className='bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors'
+					className=' text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors'
+					style={{ backgroundColor: "#333366" }}
 					onClick={() => acceptConnectionRequest(request._id)}
 				>
 					Accept

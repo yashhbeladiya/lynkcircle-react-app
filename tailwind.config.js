@@ -19,6 +19,7 @@ export default {
           accent: '#8585FF',      // Soft purple for highlights
           primary: '#5D5DFF',     // Deep indigo for branding
           text: '#444054',        // Neutral text with a purple hint
+          "base-100": "#F3F2EF",  // Lightest grey
           secondary: '#333366',
           "accent-light" : '#E6E3F0', // Slightly lighter version of accent color
         },

@@ -22,8 +22,6 @@ import {
   Edit,
   Camera,
 } from "lucide-react";
-import { set } from "date-fns";
-import { T } from "react-router/dist/production/fog-of-war-CbNQuoo8";
 
 // Types
 type AuthUser = {
@@ -48,6 +46,7 @@ const ProfileHeader = ({
   const [profilePicture, setProfilePicture] = useState(userData.profilePicture);
   const [bannerImage, setbannerImage] = useState(userData.bannerImage);
   const [status, setStatus] = useState(userData.status);
+  
 
   const [openEditDialog, setOpenEditDialog] = useState(false);
 
@@ -59,17 +58,19 @@ const ProfileHeader = ({
   });
 
   // Check connection status
-  const isConnected = userData.connections.includes(authUser?._id || "");
+  const isConnected = userData.connections.includes(authUser?._id);
   const isFollowing =
-    authUser?.role === "Client"
-      ? userData.savedWorkers.includes(authUser?._id || "")
-      : userData.followingClients.includes(authUser?._id || "");
+    userData?.role === "Client"
+      ? userData.savedWorkers.includes(authUser?._id)
+      : userData.followingClients.includes(authUser?._id);
+
+  const isSaved = userData.savedWorkers.includes(authUser?._id || "");
 
   // Mutation hooks
   const { mutate: toggleConnection } = useMutation({
     mutationFn: () =>
       authUser?.role === "Client"
-        ? axiosInstance.post(`/workers/save/${userData._id}`)
+        ? axiosInstance.post(`/users/save/${userData._id}`)
         : axiosInstance.post(`/connections/request/${userData._id}`),
     onSuccess: () => {
       toast.success(
@@ -92,6 +93,30 @@ const ProfileHeader = ({
       toast.success(
         authUser?.role === "Client" ? "Worker removed" : "Connection removed"
       );
+      queryClient.invalidateQueries({ queryKey: ["userData", userData._id] });
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as AxiosError;
+      toast.error(axiosError.response?.data?.message || "An error occurred");
+    },
+  });
+
+  const { mutate: followClient } = useMutation({
+    mutationFn: () => axiosInstance.post(`/users/follow/${userData._id}`),
+    onSuccess: () => {
+      toast.success("Client followed");
+      queryClient.invalidateQueries({ queryKey: ["userData", userData._id] });
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as AxiosError;
+      toast.error(axiosError.response?.data?.message || "An error occurred");
+    },
+  });
+
+  const { mutate: unfollowClient } = useMutation({
+    mutationFn: () => axiosInstance.delete(`/users/unfollow/${userData._id}`),
+    onSuccess: () => {
+      toast.success("Client unfollowed");
       queryClient.invalidateQueries({ queryKey: ["userData", userData._id] });
     },
     onError: (error: unknown) => {
@@ -236,14 +261,6 @@ const ProfileHeader = ({
               </span>
               <span className="text-gray-500">Connections</span>
             </div>
-            {userData.role === "Worker" && (
-              <div className="text-center">
-                <span className="font-bold block">
-                  {userData.savedWorkers.length}
-                </span>
-                <span className="text-gray-500">Saved By</span>
-              </div>
-            )}
             {userData.role === "Client" && (
               <div className="text-center">
                 <span className="font-bold block">
@@ -275,6 +292,16 @@ const ProfileHeader = ({
               >
                 {isConnected ? "Disconnect" : "Connect"}
               </Button>
+              {userData.role === "Client" && (
+                <Button
+                  variant="contained"
+                  color={isFollowing ? "error" : "secondary"}
+                  startIcon={isFollowing ? <UserMinus /> : <UserPlus />}
+                  onClick={isFollowing ? unfollowClient : followClient}
+                >
+                  {isFollowing ? "Unfollow" : "Follow"}
+                </Button>
+              )}
               {authUser?.role === "Client" && (
                 <Button
                   variant="outlined"
@@ -282,7 +309,7 @@ const ProfileHeader = ({
                   startIcon={isFollowing ? <UserMinus /> : <UserPlus />}
                   onClick={isFollowing ? removeConnection : toggleConnection}
                 >
-                  {isFollowing ? "Unsave" : "Save"}
+                  {isSaved ? "Unsave" : "Save"}
                 </Button>
               )}
             </div>

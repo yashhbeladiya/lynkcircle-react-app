@@ -298,8 +298,9 @@ const Work = ({ workPost, authUser } : { workPost: any, authUser: any}) => {
             <Typography variant="h6" color="#333366">
               {workPost.author?.firstName} {workPost.author?.lastName}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Work Post Creator
+            <Typography variant="body2" color="text.secondary" style={{ display: 'flex', alignItems: 'center' }}>
+              <FaBriefcase color="#333366" style={{ marginRight: 8 }} />
+              {workPost.author?.headline || "Work Post Creator"}
             </Typography>
           </Box>
         </Box>

@@ -17,6 +17,8 @@ import PostPage from "./pages/PostPage";
 import Network from "./pages/Network";
 import Works from "./pages/Works";
 import WorkPage from "./pages/WorkPage";
+import Service from "./pages/Service";
+import News from "./pages/News";
 
 const theme = createTheme({
   palette: {
@@ -35,7 +37,6 @@ function App() {
     queryFn: async () => {
       try {
         const res = await axiosInstance.get("/auth/me");
-        console.log("res :", res);
         return res.data;
       } catch (error: any) {
         console.log("error :", error);
@@ -69,7 +70,7 @@ function App() {
               element={!authUser ? <SignIn /> : <Navigate to={"/"} />}
             />
             <Route path="/complete-profile" element={<CompleteProfile />} />
-            <Route path="/profile/:username" element={<UserProfile />} />
+            <Route path="/profile/:username" element={ authUser ? <UserProfile /> : <Navigate to={"/signin"} /> } />
             <Route
               path="/notifications"
               element={
@@ -92,6 +93,15 @@ function App() {
               path="/works/:workPostId"
               element={authUser ? <WorkPage /> : <Navigate to={"/signin"} />}
             />
+            <Route
+              path="/service/:serviceId"
+              element={authUser ? <Service /> : <Navigate to={"/signin"} />}
+            />
+            <Route
+              path="/news"
+              element={authUser ? <News /> : <Navigate to={"/signin"} />}
+            />
+              
           </Routes>
           <Toaster />
         </Layout>

@@ -64,7 +64,7 @@ const CompleteProfileForm = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       toast.success("Account created successfully");
-      navigate("/home");
+      navigate("/");
     },
   });
 

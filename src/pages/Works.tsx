@@ -26,7 +26,11 @@ const Works = () => {
     },
   });
 
- 
+  console.log("workPostsResponse :", workPostsResponse);
+
+  // extract client's own work posts
+  const clientWorkPosts = workPostsResponse?.filter((workPost: any) => workPost.author._id === authUser._id);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="hidden lg:block lg:col-span-1">
@@ -34,20 +38,30 @@ const Works = () => {
       </div>
 
       <div className="col-span-1 lg:col-span-2 order-first lg:order-none">
-        <WorkPostCreation user={authUser} />
+        {authUser.role === 'Client' && (<WorkPostCreation user={authUser} />)}
 
-        {workPostsResponse?.length === 0 ? (
+        {(workPostsResponse?.length === 0) ? (
           <div className="flex items-center justify-center h-96">
             <h2 className="text-lg font-semibold text-center">
               No work posts yet. Be the first to post!
             </h2>
           </div>
         ) : (
-          workPostsResponse?.map((workPost: any) => (
+          authUser.role === 'Worker' && workPostsResponse?.map((workPost: any) => (
             <div key={workPost.id} className="mb-4">
               <WorkPostCard workPost={workPost} />
             </div>
-          ))
+          )))}
+
+        {clientWorkPosts?.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold">Your Work Posts</h2>
+            {clientWorkPosts?.map((workPost: any) => (
+              <div key={workPost.id} className="mb-4">
+                <WorkPostCard workPost={workPost} />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

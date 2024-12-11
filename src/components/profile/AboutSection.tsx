@@ -1,7 +1,8 @@
 import React from "react";
 import { TextField, Typography, IconButton } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { FaPencil } from "react-icons/fa6";
+import { FaCheck } from "react-icons/fa";
+
 
 const AboutSection = ({
   userData,
@@ -27,12 +28,11 @@ const AboutSection = ({
         About
       </Typography>
       {isOwnProfile && (
-        // <FaPencil color='secondary' />
         <IconButton
           sx={{ position: "absolute", top: 8, right: 8 }}
           onClick={() => setIsEditing(!isEditing)}
         >
-          <EditIcon color="secondary" />
+          {isEditing ? (<FaCheck size="23" color="#333366" onClick={handleSave}/> ) : ( <EditIcon color="secondary" /> )}
         </IconButton>
       )}
       {isEditing ? (

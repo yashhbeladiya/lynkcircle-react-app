@@ -20,7 +20,7 @@ const StyledButton = styled(Button)({
 
 function UserCard({ user, isConnection }: { user: any; isConnection: boolean }) {
   return (
-    <Card sx={{ maxWidth: 345, textAlign: "center", transition: "all 0.3s", "&:hover": { boxShadow: 6 } }}>
+    <Card sx={{ maxWidth: 345, textAlign: "center", transition: "all 0.3s", "&:hover": { boxShadow: 6 }, border: '1px solid #333366', }}>
       <Link to={`/profile/${user.username}`} style={{ textDecoration: "none", color: "inherit" }}>
         <CardContent>
           <Box display="flex" flexDirection="column" alignItems="center">

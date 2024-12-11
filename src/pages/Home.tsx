@@ -56,7 +56,7 @@ export default function Home() {
         {postsToRender.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="mb-6">
-              <Users size={64} className="mx-auto text-blue-500" />
+              <Users size={64} className="mx-auto" color="#333366" />
               <h2 className="text-lg font-semibold text-center">
                 No posts found
               </h2>
