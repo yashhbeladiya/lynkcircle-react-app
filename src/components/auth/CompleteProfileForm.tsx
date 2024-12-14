@@ -58,7 +58,6 @@ const CompleteProfileForm = () => {
       return res.data;
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Something went wrong");
       console.log(error);
     },
     onSuccess: () => {
