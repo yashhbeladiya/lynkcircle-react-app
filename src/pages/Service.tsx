@@ -7,7 +7,6 @@ import ServiceDetail from "../components/profile/ServiceDetails";
 
 const Service = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
-  console.log("serviceId :", serviceId);
   const { data: user } = useQuery({ queryKey: ["authUser"] });
   const { data: service, isLoading: serviceLoading } = useQuery({
     queryKey: ["service", serviceId],

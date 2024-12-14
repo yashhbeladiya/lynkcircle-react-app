@@ -13,6 +13,8 @@ import { useNavigate } from "react-router";
 const ServiceCard = ({ service, isOwner, onEdit, onAddJob, onViewReviews, onDelete }) => {
   const navigate = useNavigate();
 
+  console.log("ServiceCard -> service", service);
+
   const handleCardClick = () => {
     navigate(`/service/${service._id}`);
   }

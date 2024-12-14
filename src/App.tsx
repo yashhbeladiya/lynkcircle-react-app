@@ -19,6 +19,7 @@ import Works from "./pages/Works";
 import WorkPage from "./pages/WorkPage";
 import Service from "./pages/Service";
 import News from "./pages/News";
+import MessagePage from "./pages/MessagePage";
 
 const theme = createTheme({
   palette: {
@@ -101,7 +102,10 @@ function App() {
               path="/news"
               element={authUser ? <News /> : <Navigate to={"/signin"} />}
             />
-              
+            <Route
+              path="/messages"
+              element={authUser ? <MessagePage /> : <Navigate to={"/signin"} />}
+            />
           </Routes>
           <Toaster />
         </Layout>

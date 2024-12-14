@@ -16,7 +16,7 @@ import {
   ListItemText,
   Divider,
 } from "@mui/material";
-import { Menu } from "@mui/icons-material";
+import { Menu, Message } from "@mui/icons-material";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { axiosInstance } from "../lib/axios";
 import { FaHome, FaUsers, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
@@ -254,6 +254,15 @@ const Navbar = () => {
                   </Badge>
                 </IconButton>
                 <span className="text-xs hidden md:block">Notifications</span>
+              </Link>
+              <Link
+                to={`/messages`}
+                className="text-neutral flex flex-col items-center"
+              >
+                <IconButton>
+                  <Message style={{ color: iconColor }} />
+                </IconButton>
+                <span className="text-xs hidden md:block">Message</span>
               </Link>
               <Link
                 to={`/profile/${authUser.username}`}

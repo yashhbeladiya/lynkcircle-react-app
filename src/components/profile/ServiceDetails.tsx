@@ -34,6 +34,7 @@ import {
   Edit as EditIcon,
   Add as AddIcon,
   Close as CloseIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { BsTools, BsClock, BsCalendar } from "react-icons/bs";
 import { styled } from "@mui/material/styles";
@@ -41,6 +42,10 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import JobPortfolio from "./JobPortfolio";
 import { axiosInstance } from "../../lib/axios";
 import { toast } from "react-hot-toast";
+import JobPortfolioCard from "./JobPortFolioCard";
+import ReviewsDialog from "./ReviewDialog";
+import { formatDistanceToNow } from "date-fns";
+
 
 // Tabs Panel Component
 function TabPanel(props) {
@@ -106,6 +111,10 @@ const ServiceDetail = ({ service, authUser }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [editServiceModalOpen, setEditServiceModalOpen] = useState(false);
   const [jobPortfolioModalOpen, setJobPortfolioModalOpen] = useState(false);
+  const [editJobPortfolioModalOpen, setEditJobPortfolioModalOpen] =
+    useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  // const [editReviewModalOpen, setEditReviewModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
   const queryClient = useQueryClient();
@@ -155,20 +164,60 @@ const ServiceDetail = ({ service, authUser }) => {
     },
   });
 
+  const { mutate: addReview } = useMutation({
+    mutationFn: async (review) => {
+      await axiosInstance.post(`/workdetails/review/${service._id}`, review);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["workDetails", authUser.username]);
+      setReviewModalOpen(false);
+      toast.success("Review added successfully");
+    },
+  });
+
+  const { mutate: updateReview } = useMutation({
+    mutationFn: async (review) => {
+      await axiosInstance.put(`/workdetails/review/${service._id}`, review);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["workDetails", authUser.username]);
+      setReviewModalOpen(false);
+      toast.success("Review updated successfully");
+    },
+  });
+
+  const { mutate: deleteReview } = useMutation({
+    mutationFn: async (reviewId) => {
+      await axiosInstance.delete(`/workdetails/review/${reviewId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["workDetails", authUser.username]);
+      toast.success("Review deleted successfully");
+    },
+  });
+
   const handleDeleteJobPortfolio = (jobId) => {
     deleteJobPortfolio(jobId);
   };
 
   const handleSaveJobPortfolio = (job) => {
-    if (job.id) {
+    if (job._id) {
       updateJobPortfolio(job);
     } else {
-      console.log("add new job", job);
       addJobPortfolio({ ...job, service: service._id });
     }
   };
 
-  console.log(jobPortfolio);
+  const handleSaveReview = (review) => {
+    if (service.reviews.find((r) => r.reviewer === authUser.id)) {
+      updateReview(review);
+    }
+    addReview(review);
+  };
+
+  const hasUserReviewed = (reviews, userId) => {
+    return reviews.some(review => review.reviewer.id === userId);
+  };
 
   // Service Details
   const [serviceDetails, setServiceDetails] = useState({
@@ -181,6 +230,8 @@ const ServiceDetail = ({ service, authUser }) => {
     totalReviews: service.reviews.length,
     clientReviews: service.reviews,
   });
+
+  console.log(service);
 
   // ... (rest of the existing component logic remains similar)
   const handleTabChange = (event, newValue) => {
@@ -227,11 +278,7 @@ const ServiceDetail = ({ service, authUser }) => {
                 variant="outlined"
                 sx={{ mb: 1 }}
               />
-              <Rating
-                value={serviceDetails.averageRating}
-                precision={0.5}
-                readOnly
-              />
+              <Rating value={service.ratings} precision={0.5} readOnly />
               <Typography variant="caption">
                 {serviceDetails.totalReviews} Reviews
               </Typography>
@@ -302,66 +349,15 @@ const ServiceDetail = ({ service, authUser }) => {
 
           {/* Job Portfolio Tab */}
           <TabPanel value={activeTab} index={1}>
-            <Grid container spacing={3}>
-              {jobPortfolio?.map((job) => (
-                <Grid item xs={12} md={6} key={job.id}>
-                  <Card
-                    sx={{
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    {job.image &&
-                      job.image.length > 0 &&
-                      job.image.map((image, index) => (
-                        <CardMedia
-                          key={index}
-                          component="img"
-                          height="200"
-                          image={image.preview}
-                          alt={`${job.title} - Image ${index + 1}`}
-                        />
-                      ))}
-                    <CardContent>
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography variant="subtitle1" gutterBottom>
-                          {job.jobTitle}
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6">{job.title}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Client: {job.clientName}
-                      </Typography>
-                      <Typography variant="body2" paragraph>
-                        {job.description}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Completed: {job.dateCompleted}
-                      </Typography>
-                    </CardContent>
-                    <Box flexGrow={1} />
-                    {authUser && authUser._id === service.user._id && (
-                      <Box display="flex" justifyContent="flex-end">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedJob(job);
-                            setJobPortfolioModalOpen(true);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleDeleteJobPortfolio(job._id)}
-                        >
-                          <CloseIcon />
-                        </IconButton>
-                      </Box>
-                    )}
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            <JobPortfolioCard
+              jobPortfolio={jobPortfolio}
+              authUser={authUser}
+              service={service}
+              setSelectedJob={setSelectedJob}
+              setEditJobPortfolioModalOpen={setEditJobPortfolioModalOpen}
+              handleDeleteJobPortfolio={handleDeleteJobPortfolio}
+            />
+
             {/* Add Job Portfolio Button */}
             {authUser && authUser._id === service.user._id && (
               <Box textAlign="right" mt={2}>
@@ -391,32 +387,58 @@ const ServiceDetail = ({ service, authUser }) => {
 
           {/* Client Reviews Tab */}
           <TabPanel value={activeTab} index={2}>
-            {serviceDetails.clientReviews?.map((review) => (
+            {service.reviews?.map((review) => (
               <Card key={review.id} sx={{ mb: 2 }}>
                 <CardContent>
                   <Grid container alignItems="center" spacing={2}>
-                    <Grid>
-                      <Avatar>{review.client[0]}</Avatar>
+                    <Grid item>
+                      <Avatar
+                        src={review.reviewer.profilePicture}
+                        alt={review.reviewer.firstName}
+                      />
                     </Grid>
-                    <Grid>
+                    <Grid item>
                       <Typography variant="subtitle1">
-                        {review.client}
+                        {review.reviewer.firstName} {review.reviewer.lastName}
                       </Typography>
                       <Rating value={review.rating} readOnly />
                     </Grid>
-                    <Grid>
+                    <Grid item>
                       <Typography variant="caption" color="text.secondary">
-                        {review.date}
+                        {formatDistanceToNow(new Date(review.createdAt), {
+                          addSuffix: true,
+                        })}
                       </Typography>
                     </Grid>
                   </Grid>
                   <Typography variant="body2" mt={2}>
-                    {review.comment}
+                    {review.review}
                   </Typography>
+                  {authUser && authUser.id === review.reviewer.id && (
+                    <Box textAlign="right" mt={2}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<EditIcon />}
+                        onClick={() => setReviewModalOpen(true)}
+                        sx={{ mr: 1 }}
+                      >
+                        Update
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => deleteReview(service._id)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             ))}
-            {authUser && authUser.id !== service.user && (
+            {authUser && authUser._id !== service.user._id && !hasUserReviewed(service.reviews, authUser.id) && (
               <Box textAlign="right" mt={2}>
                 <Button
                   variant="contained"
@@ -437,13 +459,24 @@ const ServiceDetail = ({ service, authUser }) => {
         open={editServiceModalOpen}
         onClose={() => setEditServiceModalOpen(false)}
         serviceDetails={serviceDetails}
-      />
-
-      <JobPortfolioModal
-        open={jobPortfolioModalOpen}
-        onClose={() => setJobPortfolioModalOpen(false)}
-        job={selectedJob}
       /> */}
+
+      <JobPortfolio
+        open={editJobPortfolioModalOpen}
+        onClose={() => setEditJobPortfolioModalOpen(false)}
+        job={selectedJob}
+        onSave={handleSaveJobPortfolio}
+        isEdit={!!selectedJob}
+        initialData={selectedJob}
+      />
+      <ReviewsDialog
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        onSubmit={handleSaveReview}
+        initialReview={
+          service.reviews.find((r) => r.reviewer === authUser._id) || null
+        }
+      />
     </Container>
   );
 };

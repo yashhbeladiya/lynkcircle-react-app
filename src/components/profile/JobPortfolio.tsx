@@ -1,156 +1,178 @@
 //@ts-nocheck
-import React, { useState, useRef } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  TextField, 
-  Typography, 
-  IconButton, 
-  Card, 
-  CardMedia, 
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Typography,
+  IconButton,
+  Card,
+  CardMedia,
   CardContent,
   Chip,
-  Box
-} from '@mui/material';
-import Grid from '@mui/material/Grid2';
-import { 
-  Add as AddIcon, 
-  Close as CloseIcon, 
+  Box,
+} from "@mui/material";
+import Grid from "@mui/material/Grid2";
+import {
+  Add as AddIcon,
+  Close as CloseIcon,
   CloudUpload as CloudUploadIcon,
   Delete as DeleteIcon,
   Image as ImageIcon,
-  VideoFile as VideoFileIcon
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers-pro';
-import { LocalizationProvider } from '@mui/x-date-pickers-pro';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
-import { i } from 'react-router/dist/production/route-data-DuV3tXo2';
-import toast from 'react-hot-toast';
+  VideoFile as VideoFileIcon,
+} from "@mui/icons-material";
+import { DatePicker } from "@mui/x-date-pickers-pro";
+import { LocalizationProvider } from "@mui/x-date-pickers-pro";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
+import toast from "react-hot-toast";
 
-const JobPortfolio = ({ 
+const JobPortfolio = ({
   open,
   onClose,
   onSave,
-  isEdit = false, 
-  initialData = null 
+  isEdit = false,
+  initialData = null,
 }) => {
   const [jobDetails, setJobDetails] = useState({
-    title: initialData?.jobHistory.jobTitle || '',
-    description: initialData?.jobHistory.description || '',
-    dateCompleted: initialData?.jobHistory.dateCompleted || null,
-    clientName: initialData?.jobHistory.clientName || '',
-    clientUsername: initialData?.jobHistory.clientUsername || '',
-    images: initialData?.images || [],
-    videos: initialData?.videos || []
+    title: "",
+    description: "",
+    dateCompleted: null,
+    clientName: "",
+    clientUsername:"",
+    images: [], // Wrap in preview structure
+    videos: [],
   });
 
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
-  const handleFileUpload = (fileType) => {
-    const inputRef = fileType === 'image' ? imageInputRef : videoInputRef;
-    inputRef.current.click();
+  const handleImageUpload = (event) => {
+    try {
+      const files = Array.from(event.target.files);
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setJobDetails((prev) => ({
+            ...prev,
+            images: [...prev.images, { preview: reader.result, file }],
+          }));
+        };
+        reader.readAsDataURL(file); // This should be called here
+      });
+    } catch (error) {
+      toast.error("Error uploading image");
+    }
   };
 
-  const handleFileChange = (event, fileType) => {
-    const files = Array.from(event.target.files);
-    const newFiles = [];
-  
-    files.forEach(file => {
-      if (fileType === 'image') {
+  const handleVideoUpload = (event) => {
+    try {
+      const files = Array.from(event.target.files);
+      files.forEach((file) => {
         const reader = new FileReader();
-        reader.onload = () => {
-          setJobDetails(prev => ({
+        reader.onloadend = () => {
+          setJobDetails((prev) => ({
             ...prev,
-            images: [...prev.images, { file, preview: reader.result }]
+            videos: [...prev.videos, { preview: reader.result, file }],
           }));
         };
         reader.readAsDataURL(file);
-      } else {
-        newFiles.push({ file });
-      }
-    });
-  
-    if (fileType !== 'image') {
-      setJobDetails(prev => ({
-        ...prev,
-        [fileType + 's']: [...prev[fileType + 's'], ...newFiles]
-      }));
+      });
+    } catch (error) {
+      toast.error("Error uploading video");
     }
   };
 
   const removeFile = (index, fileType) => {
-    setJobDetails(prev => ({
-      ...prev,
-      [fileType + 's']: prev[fileType + 's'].filter((_, i) => i !== index)
-    }));
+    setJobDetails((prev) => {
+      const updatedFiles = prev[fileType + "s"].filter((_, i) => i !== index);
+      return { ...prev, [fileType + "s"]: updatedFiles };
+    });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Handle nested client object
-    if (name.startsWith('client.')) {
-      const clientField = name.split('.')[1];
-      setJobDetails(prev => ({
+    if (name.startsWith("client.")) {
+      const clientField = name.split(".")[1];
+      setJobDetails((prev) => ({
         ...prev,
         client: {
           ...prev.client,
-          [clientField]: value
-        }
+          [clientField]: value,
+        },
       }));
     } else {
-      setJobDetails(prev => ({
+      setJobDetails((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
 
-  
-
   const handleSave = () => {
     // Validate and save job details
     const jobHistory = {
+      _id: initialData?._id,
       jobTitle: jobDetails.title,
       description: jobDetails.description,
       dateCompleted: jobDetails.dateCompleted,
       clientName: jobDetails.clientName,
       clientUsername: jobDetails.clientUsername,
-      images: jobDetails.images,
-      videos: jobDetails.videos
-    }
-    
+      // Map images and videos to extract only the preview (Base64 string or URL)
+      images: jobDetails.images.map((image) => image.preview),
+      videos: jobDetails.videos.map((video) => video.preview),
+    };
+
     if (onSave) {
       onSave(jobHistory);
     }
     onClose();
   };
 
+  useEffect(() => {
+    if (initialData) {
+      setJobDetails({
+        title: initialData.jobTitle,
+        description: initialData.description,
+        dateCompleted: initialData.dateCompleted
+        ? new Date(initialData.dateCompleted)
+        : null,
+        clientName: initialData.clientName,
+        clientUsername: initialData.clientUsername,
+        images: initialData.images.map((image) => ({ preview: image })),
+        videos: initialData.videos.map((video) => ({ preview: video })),
+      });
+    }
+  }
+  , [initialData]);
+
+
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           borderRadius: 3,
-          border: '2px solid #333366'
-        }
+          border: "2px solid #333366",
+        },
       }}
     >
-      <DialogTitle sx={{ backgroundColor: '#f0f0f0', color: '#333366' }}>
+      <DialogTitle sx={{ backgroundColor: "#f0f0f0", color: "#333366" }}>
         {isEdit ? "Edit Job Portfolio" : "Add Job to Portfolio"}
+
       </DialogTitle>
-      
+
       <DialogContent dividers>
         <Grid container spacing={3}>
           {/* Job Details */}
-          <Grid size={{xs:12, md:6}}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Job Title"
@@ -171,31 +193,31 @@ const JobPortfolio = ({
               variant="outlined"
               sx={{ mb: 2 }}
             />
-            
+
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Date Completed"
                 value={jobDetails.dateCompleted}
-                onChange={(newValue) => 
-                  setJobDetails(prev => ({
-                    ...prev, 
-                    dateCompleted: newValue
+                onChange={(newValue) =>
+                  setJobDetails((prev) => ({
+                    ...prev,
+                    dateCompleted: newValue,
                   }))
                 }
-                renderInput={(params) => 
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    variant="outlined" 
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    variant="outlined"
                     sx={{ mb: 2 }}
                   />
-                }
+                )}
               />
             </LocalizationProvider>
           </Grid>
 
           {/* Client Details */}
-          <Grid size={{ xs:12, md:6}}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Client Name"
@@ -218,11 +240,7 @@ const JobPortfolio = ({
 
           {/* Image Upload */}
           <Grid size={12}>
-            <Box 
-              display="flex" 
-              alignItems="center" 
-              mb={2}
-            >
+            <Box display="flex" alignItems="center" mb={2}>
               <Typography variant="subtitle1" sx={{ mr: 2 }}>
                 Job Images
               </Typography>
@@ -232,13 +250,13 @@ const JobPortfolio = ({
                 hidden
                 accept="image/*"
                 multiple
-                onChange={(e) => handleFileChange(e, 'image')}
+                onChange={(e) => handleImageUpload(e)}
               />
               <Button
                 variant="outlined"
                 color="secondary"
                 startIcon={<ImageIcon />}
-                onClick={() => handleFileUpload('image')}
+                onClick={() => imageInputRef.current.click()}
               >
                 Upload Images
               </Button>
@@ -247,7 +265,7 @@ const JobPortfolio = ({
             <Grid container spacing={2}>
               {jobDetails.images.map((image, index) => (
                 <Grid item key={index}>
-                  <Card sx={{ width: 150, position: 'relative' }}>
+                  <Card sx={{ width: 150, position: "relative" }}>
                     <CardMedia
                       component="img"
                       height="150"
@@ -256,13 +274,13 @@ const JobPortfolio = ({
                     />
                     <IconButton
                       size="small"
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 5, 
-                        right: 5, 
-                        backgroundColor: 'rgba(255,255,255,0.7)' 
+                      sx={{
+                        position: "absolute",
+                        top: 5,
+                        right: 5,
+                        backgroundColor: "rgba(255,255,255,0.7)",
                       }}
-                      onClick={() => removeFile(index, 'image')}
+                      onClick={() => removeFile(index, "image")}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -274,11 +292,7 @@ const JobPortfolio = ({
 
           {/* Video Upload */}
           <Grid size={12}>
-            <Box 
-              display="flex" 
-              alignItems="center" 
-              mb={2}
-            >
+            <Box display="flex" alignItems="center" mb={2}>
               <Typography variant="subtitle1" sx={{ mr: 2 }}>
                 Job Videos
               </Typography>
@@ -288,13 +302,13 @@ const JobPortfolio = ({
                 hidden
                 accept="video/*"
                 multiple
-                onChange={(e) => handleFileChange(e, 'video')}
+                onChange={(e) => handleVideoUpload(e)}
               />
               <Button
                 variant="outlined"
                 color="secondary"
                 startIcon={<VideoFileIcon />}
-                onClick={() => handleFileUpload('video')}
+                onClick={() => videoInputRef.current.click()}
               >
                 Upload Videos
               </Button>
@@ -303,7 +317,7 @@ const JobPortfolio = ({
             <Grid container spacing={2}>
               {jobDetails.videos.map((video, index) => (
                 <Grid item key={index}>
-                  <Card sx={{ width: 250, position: 'relative' }}>
+                  <Card sx={{ width: 250, position: "relative" }}>
                     <CardMedia
                       component="video"
                       controls
@@ -312,13 +326,13 @@ const JobPortfolio = ({
                     />
                     <IconButton
                       size="small"
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 5, 
-                        right: 5, 
-                        backgroundColor: 'rgba(255,255,255,0.7)' 
+                      sx={{
+                        position: "absolute",
+                        top: 5,
+                        right: 5,
+                        backgroundColor: "rgba(255,255,255,0.7)",
                       }}
-                      onClick={() => removeFile(index, 'video')}
+                      onClick={() => removeFile(index, "video")}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -331,25 +345,21 @@ const JobPortfolio = ({
       </DialogContent>
 
       <DialogActions>
-        <Button 
-          onClick={onClose} 
-          color="secondary" 
-          startIcon={<CloseIcon />}
-        >
+        <Button onClick={onClose} color="secondary" startIcon={<CloseIcon />}>
           Cancel
         </Button>
-        <Button 
-          onClick={handleSave} 
-          color="primary" 
+        <Button
+          onClick={handleSave}
+          color="primary"
           variant="contained"
           startIcon={<CloudUploadIcon />}
-          sx={{ 
-            backgroundColor: '#333366', 
-            color: 'white',
-            '&:hover': { backgroundColor: '#262659' } 
+          sx={{
+            backgroundColor: "#333366",
+            color: "white",
+            "&:hover": { backgroundColor: "#262659" },
           }}
         >
-          {isEdit ? 'Update Portfolio' : 'Save Portfolio'}
+          {isEdit ? "Update Portfolio" : "Save Portfolio"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -92,11 +92,6 @@ const Post = ({ post, authUser }: {post: any, authUser: any}) => {
     ]);
   };
 
-  useEffect(() => {
-    console.log("Post comments from prop:", post.comments);
-    console.log("Current comments state:", comments);
-  }, [post.comments, comments]);
-
   return (
     <Card sx={{ mb: 4 }}>
       <CardHeader

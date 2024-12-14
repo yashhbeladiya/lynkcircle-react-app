@@ -57,7 +57,7 @@ const NotificationsPage: React.FC = () => {
 
   const { data: authUser } = useQuery<User>({
     queryKey: ["authUser"],
-    queryFn: () => axiosInstance.get("/auth/user").then((res) => res.data),
+    queryFn: () => axiosInstance.get("/auth/me").then((res) => res.data),
   });
 
   const { data: notifications, isLoading } = useQuery<Notification[]>({

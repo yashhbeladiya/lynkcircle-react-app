@@ -13,6 +13,8 @@ export default function Home() {
     queryKey: ["authUser"],
   });
 
+  console.log("Environment Variables:", process.env);
+
   const { data: recommendedUsers } = useQuery<any>({
     queryKey: ["recommendedUsers"],
     queryFn: async () => {
@@ -26,14 +28,11 @@ export default function Home() {
     },
   });
 
-  console.log("recommendedUsers :", recommendedUsers);
-
   const { data: postResponse } = useQuery<any>({
     queryKey: ["posts"],
     queryFn: async () => {
       try {
         const res = await axiosInstance.get("/feed");
-        console.log("Full posts response:", res.data);
         return res.data; // Now returning the entire response object
       } catch (error: any) {
         console.log("error :", error);
