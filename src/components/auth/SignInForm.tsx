@@ -65,8 +65,6 @@ const SignInForm = () => {
     login(userData as any);
   };
 
-  console.log("Environment Variables:", process.env);
-
   return (
     <>
       <Typography variant="h5" component="h1" gutterBottom>

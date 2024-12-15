@@ -47,7 +47,7 @@ function App() {
           console.log("User is not logged in");
           return null;
         }
-        toast.error(error?.response?.data?.message || "Something went wrong");
+        console.log("error :", error);
         return null;
       }
     },

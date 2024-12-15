@@ -13,8 +13,6 @@ export default function Home() {
     queryKey: ["authUser"],
   });
 
-  console.log("Environment Variables:", process.env);
-
   const { data: recommendedUsers } = useQuery<any>({
     queryKey: ["recommendedUsers"],
     queryFn: async () => {
